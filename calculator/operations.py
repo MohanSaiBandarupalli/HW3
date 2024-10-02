@@ -1,41 +1,26 @@
 """
-<<<<<<< HEAD
-Module for basic operations.
-"""
-=======
-This module defines basic arithmetic operations.
+This module defines arithmetic operations for the calculator.
 """
 
-
->>>>>>> Part-3
 def add(a, b):
-    """Add two numbers."""
+    """Return the sum of two numbers."""
     return a + b
 
-<<<<<<< HEAD
-=======
-
->>>>>>> Part-3
 def subtract(a, b):
-    """Subtract the second number from the first."""
+    """Return the difference of two numbers."""
     return a - b
 
-<<<<<<< HEAD
-=======
-
->>>>>>> Part-3
 def multiply(a, b):
-    """Multiply two numbers."""
+    """Return the product of two numbers."""
     return a * b
 
-<<<<<<< HEAD
 def divide(a, b):
-    """Divide the first number by the second."""
-=======
+    """
+    Divide the first number by the second.
 
-def divide(a, b):
-    """Divide the first number by the second."""
+    Raises:
+        ValueError: If the second number (b) is zero.
+    """
     if b == 0:
         raise ValueError("Cannot divide by zero")
->>>>>>> Part-3
     return a / b

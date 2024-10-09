@@ -1,5 +1,5 @@
 """
-This module contains tests for the App class.
+Unit tests for the App class, testing REPL functionality and command handling.
 """
 
 from app import App
@@ -19,8 +19,7 @@ def test_app_start_unknown_command(capfd, monkeypatch):
     App.start()
     out, _ = capfd.readouterr()
     assert "Hello World. Type 'exit' to exit." in out
-    assert "Invalid command format." in out
-    assert "Exiting the app..." in out
+    assert "No such command: unknown_command" in out
 
 def test_handle_add_command(capfd):
     """Test handling the 'add' operation."""
@@ -62,4 +61,4 @@ def test_unknown_operation(capfd):
     """Test handling an unknown operation."""
     App.handle_command("5 unknown 3")
     out, _ = capfd.readouterr()
-    assert "Unknown command. Type 'exit' to exit." in out
+    assert "Unknown operation: unknown" in out

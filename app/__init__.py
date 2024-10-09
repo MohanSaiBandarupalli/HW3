@@ -2,14 +2,11 @@ class App:
     @staticmethod
     def start():
         """Starts the REPL loop to handle user commands."""
-        # Print the greeting message
         print("Hello World. Type 'exit' to exit.")
-        
-        # Start the REPL loop
         while True:
             command = input("Enter command: ")
             if command == 'exit':
-                print("Exiting the app...")  # Exiting message
+                print("Exiting the app...")
                 break
             else:
                 App.handle_command(command)
@@ -19,7 +16,7 @@ class App:
         """Handles individual commands passed to the app."""
         parts = command.split()
         if len(parts) != 3:
-            print("Invalid command format.")
+            print(f"No such command: {command}")
             return
         a, operation, b = parts
         try:
@@ -47,4 +44,4 @@ class App:
                     result = int(result)
                 print(f"The result of {a} divide {b} is equal to {result}")
         else:
-            print("Unknown command. Type 'exit' to exit.")
+            print(f"Unknown operation: {operation}")

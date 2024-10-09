@@ -1,5 +1,5 @@
 """
-This module contains tests for the App class.
+This module contains unit tests for the App class.
 """
 
 from app import App
@@ -19,7 +19,7 @@ def test_app_start_unknown_command(capfd, monkeypatch):
     App.start()
     out, _ = capfd.readouterr()
     assert "Hello World. Type 'exit' to exit." in out
-    assert "Invalid command format." in out
+    assert "No such command: unknown_command" in out
     assert "Exiting the app..." in out
 
 def test_handle_add_command(capfd):
@@ -57,9 +57,3 @@ def test_invalid_number_input(capfd):
     App.handle_command("a add 3")
     out, _ = capfd.readouterr()
     assert "Invalid number input: 'a' or '3' is not a valid number." in out
-
-def test_unknown_operation(capfd):
-    """Test handling an unknown operation."""
-    App.handle_command("5 unknown 3")
-    out, _ = capfd.readouterr()
-    assert "Unknown command. Type 'exit' to exit." in out

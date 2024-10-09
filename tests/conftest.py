@@ -10,17 +10,16 @@ from faker import Faker
 fake = Faker()
 
 @pytest.fixture(scope='session')
-def setup_calculation_history():
+def setup_calculation_history(request):
     """
     Fixture that sets up a history of calculations with random test data.
     """
     history = []
-    for _ in range(100):  # Adjust the number of records as needed
+    num_records = int(request.config.getoption("--num_records"))  # Get the number of records from command line
+    for _ in range(num_records):
         a = fake.random_number(digits=2)
         b = fake.random_number(digits=2)
-        operation = fake.random_element(
-            elements=('add', 'subtract', 'multiply', 'divide')
-        )
+        operation = fake.random_element(elements=('add', 'subtract', 'multiply', 'divide'))
 
         # Determine the expected result based on the operation
         expected = {
@@ -53,5 +52,5 @@ def pytest_configure(config):
     """
     num_records = config.getoption("num_records")
     if num_records:
-        records = setup_calculation_history()
-        yield from records  # Use 'yield from' instead of yielding each record one by one
+        records = setup_calculation_history(config)
+        yield from records  # Use 'yield from' to yield records directly

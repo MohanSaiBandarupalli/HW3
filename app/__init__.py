@@ -1,48 +1,50 @@
-# app/__init__.py
-from decimal import Decimal, InvalidOperation
-
 class App:
     @staticmethod
-    def start() -> None:
+    def start():
+        """Starts the REPL loop to handle user commands."""
+        # Print the greeting message
         print("Hello World. Type 'exit' to exit.")
         
+        # Start the REPL loop
         while True:
-            user_input = input(">>> ")
-            if user_input.lower() == "exit":
-                print("Exiting...")
+            command = input("Enter command: ")
+            if command == 'exit':
+                print("Exiting the app...")  # Exiting message
                 break
             else:
-                App.handle_command(user_input)
+                App.handle_command(command)
 
     @staticmethod
-    def handle_command(command: str) -> None:
+    def handle_command(command: str):
+        """Handles individual commands passed to the app."""
         parts = command.split()
-        if len(parts) == 3 and parts[1] in ['add', 'subtract', 'multiply', 'divide']:
-            try:
-                a = Decimal(parts[0])
-                b = Decimal(parts[2])
-                operation = parts[1]
+        if len(parts) != 3:
+            print("Invalid command format.")
+            return
+        a, operation, b = parts
+        try:
+            a = int(a)
+            b = int(b)
+        except ValueError:
+            print(f"Invalid number input: '{a}' or '{b}' is not a valid number.")
+            return
 
-                # Perform the operation and prepare the output message
-                if operation == 'add':
-                    result = a + b
-                    print(f"The result of {command} is equal to {result}")
-                elif operation == 'subtract':
-                    result = a - b
-                    print(f"The result of {command} is equal to {result}")
-                elif operation == 'multiply':
-                    result = a * b
-                    print(f"The result of {command} is equal to {result}")
-                elif operation == 'divide':
-                    if b == 0:
-                        print("Error: Division by zero.")
-                        return
-                    result = a / b
-                    print(f"The result of {command} is equal to {result}")
-
-            except InvalidOperation:
-                print(f"Invalid number input: '{parts[0]}' or '{parts[2]}' is not a valid number.")
-            except Exception as e:
-                print(f"An error occurred: {e}")
+        if operation == 'add':
+            result = a + b
+            print(f"The result of {a} add {b} is equal to {result}")
+        elif operation == 'subtract':
+            result = a - b
+            print(f"The result of {a} subtract {b} is equal to {result}")
+        elif operation == 'multiply':
+            result = a * b
+            print(f"The result of {a} multiply {b} is equal to {result}")
+        elif operation == 'divide':
+            if b == 0:
+                print("Error: Division by zero.")
+            else:
+                result = a / b
+                if result.is_integer():
+                    result = int(result)
+                print(f"The result of {a} divide {b} is equal to {result}")
         else:
             print("Unknown command. Type 'exit' to exit.")

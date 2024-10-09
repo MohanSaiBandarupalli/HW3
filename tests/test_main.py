@@ -1,9 +1,9 @@
 """
-This module contains unit tests for the `calculate_and_print` function from the main module.
+This module contains unit tests for the `App` class from the app module.
 """
 
 import pytest
-from main import calculate_and_print  # Ensure this import matches your project structure
+from app import App  # Ensure this import matches your project structure
 
 # Parameterize the test function to cover different operations and scenarios, including errors
 @pytest.mark.parametrize("a_string, b_string, operation_string, expected_string", [
@@ -12,23 +12,18 @@ from main import calculate_and_print  # Ensure this import matches your project 
     ("4", "5", 'multiply', "The result of 4 multiply 5 is equal to 20"),
     ("20", "4", 'divide', "The result of 20 divide 4 is equal to 5"),
     ("1", "0", 'divide', "Error: Division by zero."),  # Adjusted for the actual error message
-    ("9", "3", 'unknown', "Unknown operation: unknown"),  # Test for unknown operation
+    ("9", "3", 'unknown', "Unknown command. Type 'exit' to exit."),  # Test for unknown operation
     ("a", "3", 'add', "Invalid number input: 'a' or '3' is not a valid number."),
     ("5", "b", 'subtract', "Invalid number input: '5' or 'b' is not a valid number.")
 ])
 def test_calculate_and_print(a_string, b_string, operation_string, expected_string, capsys):
     """
-    Test the calculate_and_print function with various operations and input cases.
-
-    Args:
-        a_string (str): First number as a string.
-        b_string (str): Second number as a string.
-        operation_string (str): The operation to perform (add, subtract, multiply, divide).
-        expected_string (str): The expected output from the function.
-        capsys: Pytest fixture to capture printed output.
+    Test the handle_command function with various operations and input cases.
     """
-    # Call the function and capture the output
-    calculate_and_print(a_string, b_string, operation_string)
+    # Construct the command string for testing
+    command = f"{a_string} {operation_string} {b_string}"
+    # Call the method and capture the output
+    App.handle_command(command)
     # Capture the printed output
     captured = capsys.readouterr()
     # Ensure that the captured output matches the expected string

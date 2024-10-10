@@ -1,31 +1,46 @@
 import os
+import pkgutil
+import importlib
 from app.commands import CommandHandler
-
-class AppExitException(Exception):
-    """Custom exception to indicate that the app should exit."""
-    pass
+from app.commands import Command
+from dotenv import load_dotenv
 
 class App:
-    def __init__(self, max_loops=None):
+    def __init__(self):  # Constructor
+        load_dotenv()
+        self.settings = {}  # Initialize settings as an empty dictionary
+        # Load all environment variables into settings
+        for key, value in os.environ.items():
+            self.settings[key] = value
+        # Default to 'PRODUCTION' if 'ENVIRONMENT' not set
+        self.settings.setdefault('ENVIRONMENT', 'TESTING')        
         self.command_handler = CommandHandler()
-        self.max_loops = max_loops  # Limit the number of loops for testing
+
+    def get_environment_variable(self, envvar: str = 'ENVIRONMENT'):  # Updated to snake_case
+        return self.settings.get(envvar, 'Not Set')  # Added default return for safety
+    
+    def load_plugins(self):
+        # Dynamically load all plugins in the plugins directory
+        plugins_package = 'app.plugins'
+        for _, plugin_name, is_pkg in pkgutil.iter_modules([plugins_package.replace('.', '/')]):
+            if is_pkg:  # Ensure it's a package
+                plugin_module = importlib.import_module(f'{plugins_package}.{plugin_name}')
+                for item_name in dir(plugin_module):
+                    item = getattr(plugin_module, item_name)
+                    try:
+                        if issubclass(item, Command):  # Assuming Command as the base class
+                            self.command_handler.register_command(plugin_name, item())
+                    except TypeError:
+                        continue  # If item is not a class or unrelated class, just ignore
 
     def start(self):
+        """Start the application and handle commands in REPL format."""
+        self.load_plugins()
         print("Application started. Type 'exit' to exit.")
-        loops = 0
         while True:
-            cmd_input = input(">>> ").strip()
-            if cmd_input.lower() == 'exit':
+            command_input = input(">>> ").strip()
+            if command_input.lower() == 'exit':
                 print("Exiting the app...")
-                raise AppExitException  # Custom exception for clean exit
+                raise SystemExit  # Exit cleanly
             else:
-                try:
-                    self.command_handler.execute_command(cmd_input)
-                except KeyError:
-                    print(f"No such command: {cmd_input}")
-
-            # Break after max_loops during testing (if max_loops is set)
-            if self.max_loops is not None:
-                loops += 1
-                if loops >= self.max_loops:
-                    raise AppExitException
+                self.command_handler.execute_command(command_input)

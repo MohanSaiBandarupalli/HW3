@@ -1,17 +1,10 @@
 from abc import ABC, abstractmethod
+import logging
 
 class Command(ABC):
     @abstractmethod
     def execute(self):
         pass
-
-class GreetCommand(Command):
-    def execute(self):
-        print("Hello, World!")
-
-class MenuCommand(Command):
-    def execute(self):
-        print("Displaying menu")
 
 class CommandHandler:
     def __init__(self):
@@ -25,4 +18,5 @@ class CommandHandler:
         try:
             self.commands[command_name].execute()
         except KeyError:
+            logging.error(f"No such command: {command_name}")
             print(f"No such command: {command_name}")

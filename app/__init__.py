@@ -1,23 +1,84 @@
-from app.commands import CommandHandler
+import os
+import pkgutil
+import importlib
+import sys
+from app.commands import CommandHandler, Command
+from dotenv import load_dotenv
+import logging
+import logging.config
 
 class App:
     def __init__(self, max_loops=None):
+        os.makedirs('logs', exist_ok=True)
+        self.configure_logging()
+        load_dotenv()
+        self.settings = self.load_environment_variables()
+        self.settings.setdefault('ENVIRONMENT', 'PRODUCTION')
         self.command_handler = CommandHandler()
-        self.max_loops = max_loops  # Limit the number of input loops (for testing)
+        self.max_loops = max_loops  # For testing to limit REPL loops
+
+    def configure_logging(self):
+        logging_conf_path = 'logging.conf'
+        if os.path.exists(logging_conf_path):
+            logging.config.fileConfig(logging_conf_path, disable_existing_loggers=False)
+        else:
+            logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+        logging.info("Logging configured.")
+
+    def load_environment_variables(self):
+        settings = {key: value for key, value in os.environ.items()}
+        logging.info("Environment variables loaded.")
+        return settings
+
+    def get_environment_variable(self, env_var: str = 'ENVIRONMENT'):
+        return self.settings.get(env_var, None)
+
+    def load_plugins(self):
+        plugins_package = 'app.plugins'
+        plugins_path = plugins_package.replace('.', '/')
+        if not os.path.exists(plugins_path):
+            logging.warning(f"Plugins directory '{plugins_path}' not found.")
+            return
+        for _, plugin_name, is_pkg in pkgutil.iter_modules([plugins_path]):
+            if is_pkg:
+                try:
+                    plugin_module = importlib.import_module(f'{plugins_package}.{plugin_name}')
+                    self.register_plugin_commands(plugin_module, plugin_name)
+                except ImportError as e:
+                    logging.error(f"Error importing plugin {plugin_name}: {e}")
+
+    def register_plugin_commands(self, plugin_module, plugin_name):
+        for item_name in dir(plugin_module):
+            item = getattr(plugin_module, item_name)
+            if isinstance(item, type) and issubclass(item, Command) and item is not Command:
+                # Command names are now explicitly set to the plugin's folder name
+                self.command_handler.register_command(plugin_name, item())
+                logging.info(f"Command '{plugin_name}' from plugin '{plugin_name}' registered.")
 
     def start(self):
-        print("Type 'exit' to exit.")
+        self.load_plugins()
+        logging.info("Application started. Type 'exit' to exit.")
         loops = 0
-        while True:
-            command = input(">>> ").strip()
-            if command == 'exit':
-                print("Exiting the app...")
-                break
-            else:
-                self.command_handler.execute_command(command)
+        try:
+            while True:
+                cmd_input = input(">>> ").strip()
+                if cmd_input.lower() == 'exit':
+                    logging.info("Application exit.")
+                    sys.exit(0)  # Use sys.exit(0) for a clean exit, indicating success.
+                try:
+                    self.command_handler.execute_command(cmd_input)
+                except KeyError:
+                    logging.error(f"No such command: {cmd_input}")
 
-            # Break after max_loops during testing (if max_loops is set)
-            if self.max_loops is not None:
-                loops += 1
-                if loops >= self.max_loops:
-                    break
+                # For testing: stop after max_loops (if set)
+                if self.max_loops is not None:
+                    loops += 1
+                    if loops >= self.max_loops:
+                        logging.info(f"Reached max_loops ({self.max_loops}). Exiting...")
+                        raise SystemExit(0)  # Explicitly raise SystemExit after max_loops for testing
+
+        except KeyboardInterrupt:
+            logging.info("Application interrupted and exiting gracefully.")
+            sys.exit(0)
+        finally:
+            logging.info("Application shutdown.")

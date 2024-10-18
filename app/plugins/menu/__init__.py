@@ -1,7 +1,7 @@
-import sys
+import logging
 from app.commands import Command
-
 
 class MenuCommand(Command):
     def execute(self):
-        print(f'Menu')
+        logging.info("Executing MenuCommand")  # Log when the command is executed
+        print("Displaying the menu...")  # Display a clear message

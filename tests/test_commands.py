@@ -52,3 +52,4 @@ def test_exit_command(monkeypatch):
     app = App()
     with pytest.raises(SystemExit):
         app.start()
+        

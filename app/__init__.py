@@ -1,46 +1,77 @@
 import os
 import pkgutil
 import importlib
-from app.commands import CommandHandler
-from app.commands import Command
+import sys
+from app.commands import CommandHandler, Command
 from dotenv import load_dotenv
+import logging
+import logging.config
 
 class App:
-    def __init__(self):  # Constructor
+    def __init__(self):
+        os.makedirs('logs', exist_ok=True)
+        self.configure_logging()
         load_dotenv()
-        self.settings = {}  # Initialize settings as an empty dictionary
-        # Load all environment variables into settings
-        for key, value in os.environ.items():
-            self.settings[key] = value
-        # Default to 'PRODUCTION' if 'ENVIRONMENT' not set
-        self.settings.setdefault('ENVIRONMENT', 'TESTING')        
+        self.settings = self.load_environment_variables()
+        self.settings.setdefault('ENVIRONMENT', 'PRODUCTION')
         self.command_handler = CommandHandler()
 
-    def get_environment_variable(self, envvar: str = 'ENVIRONMENT'):  # Updated to snake_case
-        return self.settings.get(envvar, 'Not Set')  # Added default return for safety
-    
-    def load_plugins(self):
-        # Dynamically load all plugins in the plugins directory
-        plugins_package = 'app.plugins'
-        for _, plugin_name, is_pkg in pkgutil.iter_modules([plugins_package.replace('.', '/')]):
-            if is_pkg:  # Ensure it's a package
-                plugin_module = importlib.import_module(f'{plugins_package}.{plugin_name}')
-                for item_name in dir(plugin_module):
-                    item = getattr(plugin_module, item_name)
-                    try:
-                        if issubclass(item, Command):  # Assuming Command as the base class
-                            self.command_handler.register_command(plugin_name, item())
-                    except TypeError:
-                        continue  # If item is not a class or unrelated class, just ignore
+    def configure_logging(self):
+        logging_conf_path = 'logging.conf'
+        if os.path.exists(logging_conf_path):
+            logging.config.fileConfig(logging_conf_path, disable_existing_loggers=False)
+        else:
+            logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+        logging.info("Logging configured.")
 
-    def start(self):
-        """Start the application and handle commands in REPL format."""
-        self.load_plugins()
-        print("Application started. Type 'exit' to exit.")
-        while True:
-            command_input = input(">>> ").strip()
-            if command_input.lower() == 'exit':
-                print("Exiting the app...")
-                raise SystemExit  # Exit cleanly
-            else:
-                self.command_handler.execute_command(command_input)
+    def load_environment_variables(self):
+        settings = {key: value for key, value in os.environ.items()}
+        logging.info("Environment variables loaded.")
+        return settings
+
+    def get_environment_variable(self, env_var: str = 'ENVIRONMENT'):
+        return self.settings.get(env_var, None)
+
+    def load_plugins(self):
+        plugins_package = 'app.plugins'
+        plugins_path = plugins_package.replace('.', '/')
+        if not os.path.exists(plugins_path):
+            logging.warning(f"Plugins directory '{plugins_path}' not found.")
+            return
+        for _, plugin_name, is_pkg in pkgutil.iter_modules([plugins_path]):
+            if is_pkg:
+                try:
+                    plugin_module = importlib.import_module(f'{plugins_package}.{plugin_name}')
+                    self.register_plugin_commands(plugin_module, plugin_name)
+                except ImportError as e:
+                    logging.error(f"Error importing plugin {plugin_name}: {e}")
+
+    def register_plugin_commands(self, plugin_module, plugin_name):
+        for item_name in dir(plugin_module):
+            item = getattr(plugin_module, item_name)
+            if isinstance(item, type) and issubclass(item, Command) and item is not Command:
+                self.command_handler.register_command(plugin_name, item())
+                logging.info(f"Command '{plugin_name}' from plugin '{plugin_name}' registered.")
+
+    @staticmethod  # <-- Add this decorator
+    def start():  # <-- Remove "self"
+        app = App()  # Initialize App within the static method
+        app.load_plugins()
+        logging.info("Application started. Type 'exit' to exit.")
+        try:
+            while True:
+                cmd_input = input(">>> ").strip()
+                if cmd_input.lower() == 'exit':
+                    logging.info("Application exit.")
+                    sys.exit(0)
+                try:
+                    app.command_handler.execute_command(cmd_input)
+                except KeyError:
+                    logging.error(f"Unknown command: {cmd_input}")
+                    print(f"Unknown command: '{cmd_input}'. Please try again.")
+                    continue
+        except KeyboardInterrupt:
+            logging.info("Application interrupted and exiting gracefully.")
+            sys.exit(0)
+        finally:
+            logging.info("Application shutdown.")
